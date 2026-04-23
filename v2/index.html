@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<meta name="theme-color" content="#0c1420">
+<title>Pump Tracker V2</title>
+<style>
+:root{--bg:#0c1420;--bg2:#111a2b;--card:#152033;--card2:#1a2740;--border:#2a3b57;--text:#e6eef8;--muted:#8ea2bf;--sky:#38bdf8;--green:#34d399;--amber:#fbbf24;--red:#f87171;--r:14px}
+*{box-sizing:border-box} html{-webkit-text-size-adjust:100%} body{margin:0;background:radial-gradient(circle at top left,rgba(56,189,248,.07),transparent 30%),radial-gradient(circle at bottom right,rgba(167,139,250,.06),transparent 25%),var(--bg);color:var(--text);font:14px/1.45 Inter,system-ui,-apple-system,sans-serif}
+.wrap{max-width:1100px;margin:auto;padding:18px 14px 72px}.title{font-size:21px;font-weight:800}.sub{color:var(--muted);margin-top:4px}.badge{display:inline-block;margin-left:8px;padding:4px 8px;border-radius:999px;font-size:11px;background:rgba(56,189,248,.12);border:1px solid rgba(56,189,248,.35);color:var(--sky)}
+.card{background:linear-gradient(180deg,var(--card),rgba(21,32,51,.96));border:1px solid var(--border);border-radius:var(--r);box-shadow:0 8px 28px rgba(0,0,0,.18)}.pad{padding:12px}.top{display:grid;grid-template-columns:1.25fr .75fr;gap:12px;margin-top:14px}.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.07em}.v{font-weight:800}
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:12px}.stat{padding:12px}.slabel{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}.sval{font-size:24px;font-weight:800;color:var(--sky);margin-top:6px;line-height:1}.g{color:var(--green)}.a{color:var(--amber)}
+button,input,textarea{font:inherit}button{border:1px solid var(--border);background:var(--card);color:var(--text);padding:9px 12px;border-radius:10px;cursor:pointer}button:hover{background:var(--card2)}.primary{background:rgba(56,189,248,.12);border-color:rgba(56,189,248,.5);color:var(--sky)}.danger{color:var(--red)}input,textarea{width:100%;background:var(--bg2);border:1px solid var(--border);color:var(--text);padding:9px 10px;border-radius:10px}input[type=date],input[type=number]{color-scheme:dark}textarea{min-height:78px;resize:vertical}
+.bar{height:8px;background:var(--bg2);border:1px solid var(--border);border-radius:999px;overflow:hidden}.fill{height:100%;background:linear-gradient(90deg,var(--sky),var(--green));width:0}.sections{display:flex;flex-direction:column;gap:10px;margin-top:16px}
+.sec{overflow:hidden}.sec.complete{border-color:rgba(52,211,153,.45)}.sec-head{display:flex;align-items:center;gap:10px;padding:13px;cursor:pointer}.num{font-size:11px;font-weight:800;color:var(--muted);background:var(--bg2);border:1px solid var(--border);padding:4px 7px;border-radius:8px}.sec-title{font-weight:800;flex:1}.sec-meta{display:flex;align-items:center;gap:8px}.sec-pct{min-width:40px;text-align:right;font-weight:800;color:var(--muted)}.mini{width:64px;height:6px;background:var(--bg2);border-radius:999px;overflow:hidden}.mini>div{height:100%;background:linear-gradient(90deg,var(--sky),var(--green))}.count{min-width:36px;text-align:right;color:var(--muted);font-size:12px}.chev{transition:transform .2s;color:var(--muted)}.chev.open{transform:rotate(180deg)}.body{display:none;border-top:1px solid var(--border)}.body.open{display:block}.inner{padding:10px;display:flex;flex-direction:column;gap:8px}
+.task{background:var(--card2);border:1px solid var(--border);border-left:4px solid var(--border);border-radius:12px;overflow:hidden}.task.prog{border-left-color:var(--amber)}.task.done{border-left-color:var(--green)}.task-row{display:flex;align-items:center;gap:8px;padding:10px;flex-wrap:wrap}.dot{width:10px;height:10px;border-radius:50%;border:1.5px solid #566b89}.dot.prog{background:var(--amber);border-color:var(--amber)}.dot.done{background:var(--green);border-color:var(--green)}.main{flex:1;min-width:180px}.tt{font-weight:600}.tt.done{color:var(--green)}.ts{font-size:11px;color:var(--muted);margin-top:2px}.detail{display:none;border-top:1px solid var(--border);padding:10px}.detail.open{display:block}.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}.upd{display:flex;gap:8px;background:var(--bg2);border:1px solid var(--border);padding:8px 9px;border-radius:10px;margin-top:6px}.udot{width:6px;height:6px;border-radius:50%;background:var(--sky);margin-top:6px}.udate{font-size:10px;color:var(--muted);margin-top:3px}
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.74);display:none;align-items:flex-start;justify-content:center;padding:12px;z-index:100}.modal-bg.show{display:flex}.modal{width:100%;max-width:760px;background:var(--card);border:1px solid var(--border);border-radius:18px;overflow:hidden}.mhead,.mfoot{padding:12px 14px;background:var(--bg2);border-bottom:1px solid var(--border)}.mfoot{border-top:1px solid var(--border);border-bottom:none;display:flex;gap:8px;flex-wrap:wrap}.mbody{padding:14px;max-height:72vh;overflow:auto}.rsum{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.rbox{background:var(--bg2);border:1px solid var(--border);padding:10px;border-radius:12px;text-align:center}.rval{font-size:22px;font-weight:800;color:var(--sky)}.rlabel{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-top:4px}.rsec{margin-top:14px}.rtitle{padding:8px 10px;background:rgba(56,189,248,.1);border-left:4px solid var(--sky);border-radius:10px;font-weight:800}.ritem{margin-top:8px;background:var(--bg2);border:1px solid var(--border);padding:10px;border-radius:12px}.rhead{display:flex;gap:8px;align-items:center;font-weight:700}.rpct{margin-left:auto;color:var(--muted);font-size:12px}.rlist{margin:7px 0 0 20px;color:#cfdbef}
+.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%) translateY(100px);background:var(--card);border:1px solid var(--border);padding:10px 14px;border-radius:12px;z-index:200;transition:transform .25s}.toast.show{transform:translateX(-50%) translateY(0)}.save{position:fixed;top:12px;right:12px;background:var(--card);border:1px solid var(--border);padding:6px 10px;border-radius:999px;font-size:11px;color:var(--muted);display:none}.save.show{display:block}
+@media (max-width:760px){.top,.stats,.grid2,.rsum{grid-template-columns:1fr}.mini,.count{display:none}}
+</style>
+</head>
+<body>
+<div class="save" id="save">Saved</div>
+<div class="wrap">
+  <div class="title">Pump Cartridge Installation Tracker <span class="badge">V2 separate link</span></div>
+  <div class="sub">Second deployment with independent browser storage. The main link stays untouched.</div>
+  <div class="top">
+    <div class="card pad">
+      <div class="row">
+        <div style="font-size:20px">📅</div>
+        <div style="flex:1;min-width:180px"><div class="label">Logging changes for</div><div class="v" id="wdTxt">Today</div></div>
+        <div style="min-width:170px"><input id="wd" type="date"></div>
+        <button onclick="setWorkDate(todayISO())">Today</button>
+      </div>
+    </div>
+    <div class="card pad">
+      <div class="row" style="justify-content:space-between"><div class="label">Overall Progress</div><div class="v" id="overallTxt">0%</div></div>
+      <div class="bar" style="margin-top:8px"><div class="fill" id="overallBar"></div></div>
+    </div>
+  </div>
+  <div class="stats">
+    <div class="card stat"><div class="slabel">Total Tasks</div><div class="sval" id="stTotal">0</div></div>
+    <div class="card stat"><div class="slabel">Completed</div><div class="sval g" id="stDone">0</div></div>
+    <div class="card stat"><div class="slabel">In Progress</div><div class="sval a" id="stProg">0</div></div>
+    <div class="card stat"><div class="slabel">Sections</div><div class="sval" id="stSecs">0/15</div></div>
+  </div>
+  <div class="toolbar">
+    <button class="primary" onclick="openReport()">Daily Report</button>
+    <button onclick="exportData()">Export</button>
+    <button onclick="document.getElementById('imp').click()">Import</button>
+    <button onclick="expandAll()">Expand All</button>
+    <button onclick="collapseAll()">Collapse All</button>
+    <button class="danger" onclick="resetAll()">Reset</button>
+    <input id="imp" type="file" accept=".json" hidden>
+  </div>
+  <div class="sections" id="sections"></div>
+</div>
+
+<div class="modal-bg" id="reportBg">
+  <div class="modal">
+    <div class="mhead" style="display:flex;gap:10px;align-items:center"><div style="font-weight:800;font-size:17px;flex:1">Daily Report</div><button onclick="closeReport()">Close</button></div>
+    <div class="mbody" id="reportBody"></div>
+    <div class="mfoot">
+      <button class="primary" onclick="copyReport()">Copy Text</button>
+      <button onclick="downloadReport()">Download</button>
+      <button onclick="window.print()">Print</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const KEY='pump-tracker-v2-separated';
+const RAW=`01|Isolation|LOTO and Mechanical Isolation Completed
+01|Isolation|Suction Spool Drop
+01|Isolation|Discharge Spool Drop
+01|Isolation|Blinds Installation
+01|Isolation|Safe Isolation Confirmation
+02|Removal Preparation|Suction Screen Inspection
+02|Removal Preparation|Cartridge Withdrawal Tools at Site
+02|Removal Preparation|IB Instrumentation Removal
+02|Removal Preparation|OB Instrumentation Removal
+02|Removal Preparation|IB Oil Pipes and Drain Sight Glass Removal
+02|Removal Preparation|OB Oil Pipes Removal, Draining, and Blinding
+02|Removal Preparation|Water Pipes Removal
+02|Removal Preparation|OB Upper Bearing Housing Inspection and Boxing Up
+02|Removal Preparation|Delivery Flange Nut Loosening by Hydraulic Method
+03|Coupling and Guard Removal|Spacer Coupling Guard Removal
+03|Coupling and Guard Removal|Spacer Coupling Split Plate Removal
+03|Coupling and Guard Removal|Spacer Coupling Removal
+03|Coupling and Guard Removal|Load Coupling Guard Bolt Loosening
+03|Coupling and Guard Removal|Load Coupling Guard Removal by Crane
+03|Coupling and Guard Removal|Load Coupling Guard Removal
+03|Coupling and Guard Removal|Load Coupling Disconnection
+03|Coupling and Guard Removal|Coupling Hub Removal by Hydraulic Method
+04|Discharge Side and Withdrawal Setup|Tensioning Tools Setup
+04|Discharge Side and Withdrawal Setup|Delivery Flange Stud Cleaning and Polishing
+04|Discharge Side and Withdrawal Setup|Pull-Up Ring Bolts Removal
+04|Discharge Side and Withdrawal Setup|Withdrawal Table Rigging Up
+04|Discharge Side and Withdrawal Setup|Extension Piece Rigging Up
+04|Discharge Side and Withdrawal Setup|Extension Piece Installation
+04|Discharge Side and Withdrawal Setup|Extension Piece Pedestal Installation
+04|Discharge Side and Withdrawal Setup|Withdrawal Table Level Alignment
+04|Discharge Side and Withdrawal Setup|Discharge Head Guide Plate Installation
+04|Discharge Side and Withdrawal Setup|Pull-Up Ring Removal
+05|Cartridge Withdrawal|Pump Cartridge Partial Withdrawal
+05|Cartridge Withdrawal|Intermediate Piece Installation
+05|Cartridge Withdrawal|Pump Cartridge Full Withdrawal
+05|Cartridge Withdrawal|Old Cartridge Rigging Down
+05|Cartridge Withdrawal|Extension Piece Removal
+05|Cartridge Withdrawal|Cartridge Guide Removal
+05|Cartridge Withdrawal|Old Cartridge Transfer to Constar
+06|Inspection and Cleaning|Barrel Cleaning
+06|Inspection and Cleaning|Barrel Mating Face Cleaning
+06|Inspection and Cleaning|Pump Barrel Measurement Verification
+06|Inspection and Cleaning|Cyclone Separator Piping Cleaning and Flushing
+06|Inspection and Cleaning|Lube Oil, Seal Piping, and Drain Line Cleaning
+07|New Cartridge Preparation|New Cartridge Rigging Up from Constar
+07|New Cartridge Preparation|Extension Piece Installation on New Cartridge
+07|New Cartridge Preparation|Cartridge Guide Installation on New Cartridge
+07|New Cartridge Preparation|New Cartridge Installation on Withdrawal Table
+07|New Cartridge Preparation|Discharge Flange Gasket Installation
+07|New Cartridge Preparation|Required O-Rings Installation
+07|New Cartridge Preparation|Withdrawal Table Balancing
+08|Material Readiness / O-Ring Verification|First Impeller O-Ring Verification
+08|Material Readiness / O-Ring Verification|Discharge Flange Seal Ring Verification
+08|Material Readiness / O-Ring Verification|Middle Impeller O-Ring Verification
+08|Material Readiness / O-Ring Verification|Pull-Up Ring Face O-Ring Verification
+08|Material Readiness / O-Ring Verification|Pull-Up Ring Vertical O-Ring Verification
+09|Cartridge Installation|Refurbished Cartridge Insertion Start
+09|Cartridge Installation|Refurbished Cartridge Full Insertion
+09|Cartridge Installation|Cartridge Securing
+09|Cartridge Installation|Cartridge Guide Plate Removal
+09|Cartridge Installation|Delivery Flange Nut Installation
+10|Hydraulic Tightening|Delivery Flange Tightening by Hydraulic Method
+11|Post-Installation Mechanical and Alignment Checks|Free Rotation Check
+11|Post-Installation Mechanical and Alignment Checks|Soft Foot Check
+11|Post-Installation Mechanical and Alignment Checks|Soft Foot Correction
+11|Post-Installation Mechanical and Alignment Checks|Pump and Gearbox Alignment Check
+11|Post-Installation Mechanical and Alignment Checks|Alignment Correction
+11|Post-Installation Mechanical and Alignment Checks|Shaft End Float Measurement
+11|Post-Installation Mechanical and Alignment Checks|Shaft Centralization with PCST Crew
+11|Post-Installation Mechanical and Alignment Checks|Pump Shaft Spider and Rig Alignment Installation
+11|Post-Installation Mechanical and Alignment Checks|Gearbox Shaft Spider and Rig Alignment Installation
+11|Post-Installation Mechanical and Alignment Checks|Axial Movement Measurement
+11|Post-Installation Mechanical and Alignment Checks|Alignment Reading
+11|Post-Installation Mechanical and Alignment Checks|Alignment Prechecks
+12|Temporary Setup Removal and Reinstatement|Pull-Up Ring O-Rings Installation
+12|Temporary Setup Removal and Reinstatement|Pull-Up Ring Installation
+12|Temporary Setup Removal and Reinstatement|Extension Piece and Pedestal Removal
+12|Temporary Setup Removal and Reinstatement|Withdrawal Table Rigging Down
+12|Temporary Setup Removal and Reinstatement|Extension Piece and Pedestal Rigging Down
+12|Temporary Setup Removal and Reinstatement|IB Instrumentation Installation by PCST Crew
+13|Coupling, Gearbox, and Oil System Final Reassembly|Coupling Hub Installation by Hydraulic Method
+13|Coupling, Gearbox, and Oil System Final Reassembly|Load Coupling Gap Calculation
+13|Coupling, Gearbox, and Oil System Final Reassembly|Load Coupling Installation with Guard
+13|Coupling, Gearbox, and Oil System Final Reassembly|Spacer Coupling Gap Calculation
+13|Coupling, Gearbox, and Oil System Final Reassembly|Spacer Coupling Installation with Guard
+13|Coupling, Gearbox, and Oil System Final Reassembly|Oil Supply Mesh Installation
+13|Coupling, Gearbox, and Oil System Final Reassembly|Gearbox Breather Replacement
+13|Coupling, Gearbox, and Oil System Final Reassembly|Gearbox Cleaning
+13|Coupling, Gearbox, and Oil System Final Reassembly|Lube Oil Line Installation with Mesh
+13|Coupling, Gearbox, and Oil System Final Reassembly|Lube Oil Filter Replacement
+13|Coupling, Gearbox, and Oil System Final Reassembly|Lube Oil Flushing / Debris Monitoring
+13|Coupling, Gearbox, and Oil System Final Reassembly|Oil Sampling and Lab Analysis
+14|Spool Reinstatement and De-Blinding|Discharge Upstream Endblind Drop
+14|Spool Reinstatement and De-Blinding|Discharge Downstream Endblind Drop
+14|Spool Reinstatement and De-Blinding|Discharge Spool Installation
+14|Spool Reinstatement and De-Blinding|Discharge Spool Tightening
+14|Spool Reinstatement and De-Blinding|Discharge Flange Tightening Completion
+14|Spool Reinstatement and De-Blinding|Suction Upstream Endblind Drop
+14|Spool Reinstatement and De-Blinding|Suction Downstream Endblind Drop
+14|Spool Reinstatement and De-Blinding|Suction Spool Installation
+14|Spool Reinstatement and De-Blinding|Suction Spool Tightening
+15|Startup and Handover|Startup with RU and Vibration Crew
+15|Startup and Handover|Pump Handed Over to Operation for Startup`;
+const sectionsMap=new Map();
+RAW.split('\n').forEach((line,i)=>{const [num,title,task]=line.split('|'); if(!sectionsMap.has(num)) sectionsMap.set(num,{id:'s'+parseInt(num,10),num:parseInt(num,10),title,defaultCollapsed:num==='08',tasks:[]}); const sec=sectionsMap.get(num); sec.tasks.push({id:`${sec.id}t${sec.tasks.length+1}`,title:task});});
+const SECTIONS=[...sectionsMap.values()];
+const ALL_TASKS=SECTIONS.flatMap(s=>s.tasks); const TASK_OF=Object.fromEntries(ALL_TASKS.map(t=>[t.id,t])); const SEC_OF=Object.fromEntries(SECTIONS.flatMap(s=>s.tasks.map(t=>[t.id,s.id])));
+let S={}, currentReportDate=null, saveTimer=null;
+const esc=s=>String(s??'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;');
+const todayISO=()=>{const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');};
+function fmtDate(iso){if(!iso) return '—'; const [y,m,d]=iso.split('-'); const months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']; return `${parseInt(d,10)} ${months[parseInt(m,10)-1]} ${y}`;}
+function uid(){return Math.random().toString(36).slice(2,9)}
+function toast(msg){const t=document.createElement('div'); t.className='toast'; t.textContent=msg; document.body.appendChild(t); requestAnimationFrame(()=>t.classList.add('show')); setTimeout(()=>{t.classList.remove('show'); setTimeout(()=>t.remove(),250)},2200)}
+function showSave(){const el=document.getElementById('save'); el.classList.add('show'); clearTimeout(saveTimer); saveTimer=setTimeout(()=>el.classList.remove('show'),1200)}
+function persist(){localStorage.setItem(KEY,JSON.stringify(S)); showSave()}
+function init(){try{S=JSON.parse(localStorage.getItem(KEY))||{}}catch{S={}} if(!S._meta) S._meta={workDate:todayISO()}; if(!S.activityLog) S.activityLog=[]; SECTIONS.forEach(sec=>{if(!S[sec.id]) S[sec.id]={collapsed:!!sec.defaultCollapsed}; sec.tasks.forEach(t=>{if(!S[t.id]) S[t.id]={progress:0,notes:'',updates:[],detailOpen:false,lastModified:''}; if(!Array.isArray(S[t.id].updates)) S[t.id].updates=[];})})}
+function taskP(t){return Number(S[t.id].progress||0)}
+function log(taskId,type,extra={}){S.activityLog.push({id:uid(),date:S._meta.workDate,ts:Date.now(),taskId,type,...extra}); if(taskId) S[taskId].lastModified=S._meta.workDate}
+function setWorkDate(v){if(!v) return; S._meta.workDate=v; persist(); drawTop(); toast(v===todayISO()?'Logging for today':'Logging date updated')}
+function drawTop(){document.getElementById('wd').value=S._meta.workDate; document.getElementById('wdTxt').textContent=S._meta.workDate===todayISO()?`Today · ${fmtDate(S._meta.workDate)}`:fmtDate(S._meta.workDate)}
+function secPct(sec){return Math.round(sec.tasks.reduce((a,t)=>a+taskP(t),0)/sec.tasks.length)||0}
+function secDone(sec){return sec.tasks.filter(t=>taskP(t)===100).length}
+function dash(){let total=0,done=0,prog=0,secs=0; SECTIONS.forEach(sec=>{let d=0; sec.tasks.forEach(t=>{total++; const p=taskP(t); if(p===100){done++;d++} else if(p>0) prog++}); if(d===sec.tasks.length) secs++}); const overall=total?Math.round(ALL_TASKS.reduce((a,t)=>a+taskP(t),0)/total):0; document.getElementById('stTotal').textContent=total; document.getElementById('stDone').textContent=done; document.getElementById('stProg').textContent=prog; document.getElementById('stSecs').textContent=`${secs}/${SECTIONS.length}`; document.getElementById('overallTxt').textContent=overall+'%'; document.getElementById('overallBar').style.width=overall+'%'}
+function taskHtml(t){const p=taskP(t), st=S[t.id]; const klass=p===100?'task done':p>0?'task prog':'task'; const dot=p===100?'dot done':p>0?'dot prog':'dot'; return `<div class="${klass}"><div class="task-row"><div class="${dot}"></div><div class="main"><div class="tt ${p===100?'done':''}">${esc(t.title)}</div><div class="ts">${p}% complete</div></div><button onclick="quick('${t.id}',0)">0</button><button onclick="quick('${t.id}',50)">50</button><button onclick="quick('${t.id}',100)">100</button><button class="primary" onclick="toggleDetail('${t.id}')">${st.detailOpen?'Hide':'More'}</button></div><div class="detail ${st.detailOpen?'open':''}"><div class="grid2"><div><div class="label">Progress</div><input type="range" min="0" max="100" value="${p}" oninput="setProgress('${t.id}',this.value)"></div><div><div class="label">Percent</div><input type="number" min="0" max="100" value="${p}" oninput="setProgress('${t.id}',this.value)"></div></div><div style="margin-top:10px"><div class="label">Notes / Findings</div><textarea oninput="setNotes('${t.id}',this.value)">${esc(st.notes||'')}</textarea></div><div style="margin-top:10px"><div class="label">Add Update</div><div class="grid2"><input id="u-${t.id}" placeholder="Add reading, note, or update"><input id="d-${t.id}" type="date" value="${S._meta.workDate}"></div><div style="margin-top:8px"><button class="primary" onclick="addUpd('${t.id}')">Add Update</button></div></div>${st.updates.map((u,i)=>`<div class='upd'><div class='udot'></div><div style='flex:1'><div>${esc(u.text)}</div><div class='udate'>${fmtDate(u.date)}</div></div><button onclick="delUpd('${t.id}',${i})">×</button></div>`).join('')}${st.lastModified?`<div class='ts' style='margin-top:8px'>Last updated: ${fmtDate(st.lastModified)}</div>`:''}</div></div>`}
+function secHtml(sec){const p=secPct(sec), d=secDone(sec); return `<div class="sec card ${p===100?'complete':''}"><div class="sec-head" onclick="toggleSec('${sec.id}')"><div class="num">${String(sec.num).padStart(2,'0')}</div><div class="sec-title">${esc(sec.title)}</div><div class="sec-meta"><div class="sec-pct">${p}%</div><div class="mini"><div style="width:${p}%"></div></div><div class="count">${d}/${sec.tasks.length}</div><div class="chev ${S[sec.id].collapsed?'':'open'}">⌄</div></div></div><div class="body ${S[sec.id].collapsed?'':'open'}"><div class="inner">${sec.tasks.map(taskHtml).join('')}</div></div></div>`}
+function render(){document.getElementById('sections').innerHTML=SECTIONS.map(secHtml).join(''); drawTop(); dash()}
+function toggleSec(id){S[id].collapsed=!S[id].collapsed; persist(); render()} function expandAll(){SECTIONS.forEach(s=>S[s.id].collapsed=false); persist(); render()} function collapseAll(){SECTIONS.forEach(s=>S[s.id].collapsed=true); persist(); render()} function toggleDetail(id){S[id].detailOpen=!S[id].detailOpen; persist(); render()} function quick(id,v){setProgress(id,v)}
+function setProgress(id,v){v=Math.max(0,Math.min(100,Number(v)||0)); const old=Number(S[id].progress||0); S[id].progress=v; if(old!==v) log(id,'progress',{from:old,to:v}); persist(); render()} function setNotes(id,v){S[id].notes=v; log(id,'note'); persist()} function addUpd(id){const inp=document.getElementById('u-'+id),dt=document.getElementById('d-'+id); const text=inp.value.trim(); if(!text) return; const date=(dt&&dt.value)||S._meta.workDate; S[id].updates.push({id:uid(),text,date}); log(id,'update',{text,updDate:date}); persist(); render()} function delUpd(id,i){S[id].updates.splice(i,1); persist(); render()}
+function resetAll(){if(!confirm('Reset all progress and clear activity log?')) return; ALL_TASKS.forEach(t=>S[t.id]={progress:0,notes:'',updates:[],detailOpen:false,lastModified:''}); S.activityLog=[]; persist(); render(); toast('All progress reset')}
+function exportData(){const blob=new Blob([JSON.stringify({version:2,exportedAt:new Date().toISOString(),state:S},null,2)],{type:'application/json'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=`pump-tracker-v2-${todayISO()}.json`; a.click(); URL.revokeObjectURL(url); toast('Backup exported')}
+function importData(input){const f=input.files&&input.files[0]; if(!f) return; const r=new FileReader(); r.onload=e=>{try{const data=JSON.parse(e.target.result); if(!data.state) throw new Error('Invalid backup'); if(!confirm('Replace current V2 data with imported backup?')) return; S=data.state; init(); persist(); render(); toast('Backup restored')}catch{toast('Import failed')} input.value=''}; r.readAsText(f)}
+function openReport(){currentReportDate=S._meta.workDate; renderReport(); document.getElementById('reportBg').classList.add('show'); document.body.style.overflow='hidden'} function closeReport(){document.getElementById('reportBg').classList.remove('show'); document.body.style.overflow=''}
+function renderReport(){const date=currentReportDate; const acts=S.activityLog.filter(a=>a.date===date); const byTask={}; acts.forEach(a=>{if(!a.taskId) return; (byTask[a.taskId]=byTask[a.taskId]||[]).push(a)}); const changed=Object.keys(byTask).length; const doneToday=Object.values(byTask).filter(arr=>arr.some(a=>a.type==='progress'&&Number(a.to)===100)).length; const upds=acts.filter(a=>a.type==='update').length; const overall=Math.round(ALL_TASKS.reduce((a,t)=>a+taskP(t),0)/ALL_TASKS.length)||0; let html=`<div><div class='label'>Report for</div><input type='date' value='${date}' onchange='currentReportDate=this.value;renderReport()'></div><div class='rsum' style='margin-top:12px'><div class='rbox'><div class='rval'>${changed}</div><div class='rlabel'>Tasks Active</div></div><div class='rbox'><div class='rval g'>${doneToday}</div><div class='rlabel'>Completed</div></div><div class='rbox'><div class='rval a'>${upds}</div><div class='rlabel'>Updates</div></div><div class='rbox'><div class='rval'>${overall}%</div><div class='rlabel'>Overall</div></div></div>`; if(!changed){html+=`<div style='text-align:center;color:var(--muted);padding:28px 10px'>No activity recorded for ${fmtDate(date)}.</div>`; document.getElementById('reportBody').innerHTML=html; return} const bySec={}; Object.keys(byTask).forEach(id=>{(bySec[SEC_OF[id]]=bySec[SEC_OF[id]]||[]).push(id)}); SECTIONS.forEach(sec=>{const ids=bySec[sec.id]; if(!ids) return; html+=`<div class='rsec'><div class='rtitle'>${String(sec.num).padStart(2,'0')} · ${esc(sec.title)}</div>`; ids.forEach(id=>{const arr=byTask[id].sort((a,b)=>a.ts-b.ts); html+=`<div class='ritem'><div class='rhead'><span>${taskP(TASK_OF[id])===100?'✓':'◐'}</span><span>${esc(TASK_OF[id].title)}</span><span class='rpct'>${taskP(TASK_OF[id])}%</span></div><ul class='rlist'>`; const pr=arr.filter(a=>a.type==='progress'); if(pr.length){const f=pr[0].from,l=pr[pr.length-1].to; if(f!==l) html+=`<li>Progress: ${f}% → ${l}%</li>`} arr.forEach(a=>{if(a.type==='update') html+=`<li>Update: ${esc(a.text)}</li>`}); html+='</ul></div>'}); html+='</div>'}); document.getElementById('reportBody').innerHTML=html}
+function buildReportText(){const date=currentReportDate; const acts=S.activityLog.filter(a=>a.date===date); const byTask={}; acts.forEach(a=>{if(a.taskId) (byTask[a.taskId]=byTask[a.taskId]||[]).push(a)}); let out=`Pump Tracker V2 Daily Report\nDate: ${fmtDate(date)}\n\n`; out+=`Overall Progress: ${Math.round(ALL_TASKS.reduce((a,t)=>a+taskP(t),0)/ALL_TASKS.length)||0}%\n`; out+=`Tasks Active: ${Object.keys(byTask).length}\n\n`; const bySec={}; Object.keys(byTask).forEach(id=>{(bySec[SEC_OF[id]]=bySec[SEC_OF[id]]||[]).push(id)}); SECTIONS.forEach(sec=>{const ids=bySec[sec.id]; if(!ids) return; out+=`${String(sec.num).padStart(2,'0')} ${sec.title}\n`; ids.forEach(id=>{out+=`  - ${TASK_OF[id].title} — ${taskP(TASK_OF[id])}%\n`; byTask[id].forEach(a=>{if(a.type==='update') out+=`    • ${a.text}\n`})}); out+='\n'}); return out}
+async function copyReport(){const txt=buildReportText(); try{await navigator.clipboard.writeText(txt); toast('Report copied')}catch{const ta=document.createElement('textarea'); ta.value=txt; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); toast('Report copied')}}
+function downloadReport(){const txt=buildReportText(); const blob=new Blob([txt],{type:'text/plain;charset=utf-8'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=`pump-tracker-v2-report-${currentReportDate}.txt`; a.click(); URL.revokeObjectURL(url); toast('Report downloaded')}
+document.getElementById('wd').addEventListener('change',e=>setWorkDate(e.target.value)); document.getElementById('imp').addEventListener('change',e=>importData(e.target)); document.getElementById('reportBg').addEventListener('click',e=>{if(e.target.id==='reportBg') closeReport()}); document.addEventListener('keydown',e=>{if(e.key==='Escape') closeReport()});
+init(); render();
+</script>
+</body>
+</html>
