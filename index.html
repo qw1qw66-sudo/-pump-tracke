@@ -1,11 +1,942 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Test</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
+  <meta name="theme-color" content="#0c1420" />
+  <title>Pump Cartridge Installation Tracker</title>
+  <style>
+    :root{
+      --bg:#0c1420; --bg2:#101a2a; --surface:#152033; --surface2:#1a2740;
+      --border:#24344d; --border2:#314665; --text:#e4ecf7; --text2:#c4d0e2;
+      --muted:#7a8ca5; --faint:#3e5575; --sky:#38bdf8; --sky-dim:rgba(56,189,248,.12);
+      --green:#34d399; --green-dim:rgba(52,211,153,.12); --amber:#fbbf24; --amber-dim:rgba(251,191,36,.12);
+      --red:#f87171; --red-dim:rgba(248,113,113,.12); --purple:#a78bfa; --purple-dim:rgba(167,139,250,.12);
+      --shadow-sm:0 1px 2px rgba(0,0,0,.2); --shadow-lg:0 12px 40px rgba(0,0,0,.35);
+      --radius:12px;
+    }
+    *{box-sizing:border-box;margin:0;padding:0}
+    html{-webkit-text-size-adjust:100%}
+    body{
+      background:var(--bg);
+      background-image:
+        radial-gradient(at 20% 0%, rgba(56,189,248,.06) 0%, transparent 50%),
+        radial-gradient(at 80% 100%, rgba(167,139,250,.04) 0%, transparent 50%);
+      color:var(--text);
+      font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+      font-size:14px; line-height:1.5; min-height:100vh; -webkit-font-smoothing:antialiased;
+      padding-bottom:env(safe-area-inset-bottom);
+    }
+    .wrap{max-width:1100px;margin:0 auto;padding:18px 14px 70px}
+    .app-title{font-size:20px;font-weight:800;letter-spacing:-.3px}
+    .app-sub{color:var(--muted);font-size:12px;margin-top:4px}
+    .top-grid{display:grid;grid-template-columns:1.3fr .7fr;gap:12px;margin-top:14px}
+    .card{background:linear-gradient(180deg,var(--surface),rgba(21,32,51,.94));border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-sm)}
+    .card-pad{padding:12px}
+    .workdate-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+    .wd-badge{padding:8px 10px;border-radius:10px;background:var(--sky-dim);border:1px solid rgba(56,189,248,.35);color:var(--sky);font-weight:700}
+    .wd-label{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.06em}
+    .wd-value{font-weight:700;margin-top:2px}
+    .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+    .stat{padding:12px}
+    .stat-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+    .stat-val{font-size:24px;font-weight:800;line-height:1;margin-top:6px;color:var(--sky)}
+    .stat-val.g{color:var(--green)} .stat-val.a{color:var(--amber)}
+    .toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+    button,.btn{
+      border:1px solid var(--border);background:var(--surface);color:var(--text2);padding:9px 12px;border-radius:10px;
+      cursor:pointer;font-weight:600;min-height:38px
+    }
+    button:hover,.btn:hover{background:var(--surface2);border-color:var(--border2)}
+    .primary{background:var(--sky-dim);border-color:var(--sky);color:var(--sky)}
+    .danger{color:var(--red);border-color:rgba(248,113,113,.35)}
+    input,textarea,select{
+      width:100%;background:var(--bg2);border:1px solid var(--border);color:var(--text);border-radius:10px;
+      padding:9px 10px;font:inherit
+    }
+    input[type="date"],input[type="number"]{color-scheme:dark}
+    input:focus,textarea:focus{outline:none;border-color:var(--sky);box-shadow:0 0 0 3px rgba(56,189,248,.12)}
+    .overall{margin-top:10px;padding:12px}
+    .overall-top{display:flex;justify-content:space-between;gap:8px;margin-bottom:8px}
+    .overall-top span:first-child{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.06em}
+    .overall-top span:last-child{font-weight:800}
+    .bar-track{height:8px;background:var(--bg2);border:1px solid var(--border);border-radius:999px;overflow:hidden}
+    .bar-fill{height:100%;background:linear-gradient(90deg,var(--sky),var(--green));width:0}
+    .sections{display:flex;flex-direction:column;gap:10px;margin-top:16px}
+    .sec{overflow:hidden}
+    .sec.complete{border-color:rgba(52,211,153,.45)}
+    .sec-head{display:flex;align-items:center;gap:10px;padding:13px;cursor:pointer}
+    .sec-num{font-size:11px;font-weight:800;color:var(--muted);background:var(--bg2);border:1px solid var(--border);padding:4px 7px;border-radius:8px}
+    .sec-title{font-weight:800;flex:1}
+    .sec-meta{display:flex;align-items:center;gap:8px}
+    .mini-bar{width:64px;height:6px;background:var(--bg2);border-radius:999px;overflow:hidden}
+    .mini-fill{height:100%;background:linear-gradient(90deg,var(--sky),var(--green))}
+    .sec-pct{min-width:40px;text-align:right;font-weight:800;color:var(--muted)}
+    .sec-pct.done{color:var(--green)} .sec-pct.active{color:var(--sky)}
+    .sec-count{min-width:36px;text-align:right;color:var(--faint);font-size:12px}
+    .chev{transition:transform .2s;color:var(--faint)}
+    .chev.open{transform:rotate(180deg);color:var(--sky)}
+    .sec-body{display:none;border-top:1px solid var(--border)}
+    .sec-body.open{display:block}
+    .sec-body-inner{padding:10px;display:flex;flex-direction:column;gap:7px}
+    .task{background:var(--surface2);border:1px solid var(--border);border-left:4px solid var(--border);border-radius:11px;overflow:hidden}
+    .task.prog{border-left-color:var(--amber)} .task.done{border-left-color:var(--green)}
+    .task-row{display:flex;align-items:center;gap:8px;padding:10px}
+    .dot{width:10px;height:10px;border-radius:50%;border:1.5px solid var(--faint)}
+    .dot.prog{background:var(--amber);border-color:var(--amber)} .dot.done{background:var(--green);border-color:var(--green)}
+    .task-main{flex:1;min-width:0}
+    .task-title{font-weight:600;word-break:break-word}
+    .task-title.done{color:var(--green)}
+    .task-sub{font-size:11px;color:var(--muted);margin-top:2px}
+    .pill{font-size:10px;font-weight:800;padding:3px 6px;border-radius:7px;text-transform:uppercase;letter-spacing:.04em}
+    .pill-flex{color:var(--sky);border:1px solid rgba(56,189,248,.35);background:var(--sky-dim)}
+    .pill-oring{color:var(--purple);border:1px solid rgba(167,139,250,.35);background:var(--purple-dim)}
+    .quick{display:flex;gap:4px}
+    .qbtn{padding:6px 8px;min-height:0;border-radius:8px;font-size:11px}
+    .qbtn.active{background:var(--green-dim);border-color:var(--green);color:var(--green)}
+    .expand-btn{padding:6px 8px;min-height:0}
+    .task-detail{display:none;border-top:1px solid var(--border);padding:10px}
+    .task-detail.open{display:block}
+    .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .field{display:flex;flex-direction:column;gap:5px}
+    .field-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+    .prog-wrap{display:flex;align-items:center;gap:10px}
+    input[type=range]{accent-color:var(--sky)}
+    textarea{min-height:74px;resize:vertical}
+    .updates{display:flex;flex-direction:column;gap:6px;margin-top:8px}
+    .upd{display:flex;gap:8px;background:var(--bg2);border:1px solid var(--border);padding:8px 9px;border-radius:10px}
+    .upd-b{width:6px;height:6px;border-radius:50%;background:var(--sky);margin-top:6px;flex:0 0 auto}
+    .upd-text{flex:1}
+    .upd-date{font-size:10px;color:var(--muted);margin-top:2px}
+    .upd-del{background:transparent;border:none;color:var(--faint);padding:0 4px}
+    .oring-box{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;border-top:1px solid var(--border);padding:10px;background:rgba(167,139,250,.04)}
+    .or-item{background:var(--bg2);border:1px solid var(--border);padding:8px;border-radius:10px}
+    .or-k{font-size:10px;color:rgba(167,139,250,.75);text-transform:uppercase}
+    .or-v{font-weight:800;margin-top:4px}
+    .verify-btn.verified{border-color:var(--green);color:var(--green);background:var(--green-dim)}
+    .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);display:none;align-items:flex-start;justify-content:center;padding:12px;z-index:100;overflow:auto}
+    .modal-overlay.show{display:flex}
+    .modal{width:100%;max-width:760px;background:var(--surface);border:1px solid var(--border2);border-radius:18px;box-shadow:var(--shadow-lg);overflow:hidden}
+    .modal-head,.modal-foot{padding:12px 14px;background:var(--bg2);border-bottom:1px solid var(--border)}
+    .modal-foot{border-top:1px solid var(--border);border-bottom:none;display:flex;gap:8px;flex-wrap:wrap}
+    .modal-title{font-size:17px;font-weight:800}
+    .modal-body{padding:14px;max-height:72vh;overflow:auto}
+    .report-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+    .rstat{background:var(--bg2);border:1px solid var(--border);padding:11px;border-radius:12px;text-align:center}
+    .rval{font-size:22px;font-weight:800;color:var(--sky)} .rval.g{color:var(--green)} .rval.a{color:var(--amber)}
+    .rlabel{font-size:10px;color:var(--muted);margin-top:5px;text-transform:uppercase;letter-spacing:.05em}
+    .rsec{margin-top:14px}
+    .rsec-title{padding:8px 10px;background:var(--sky-dim);border-left:4px solid var(--sky);border-radius:10px;font-weight:800}
+    .r-task{margin-top:8px;background:var(--bg2);border:1px solid var(--border);padding:10px;border-radius:12px}
+    .r-head{display:flex;gap:8px;align-items:center;font-weight:700}
+    .r-pct{margin-left:auto;color:var(--muted);font-size:12px}
+    .r-list{margin:7px 0 0 20px;color:var(--text2)}
+    .r-list li{margin:3px 0}
+    .toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%) translateY(100px);background:var(--surface);border:1px solid var(--border2);border-radius:12px;padding:10px 14px;z-index:200;transition:transform .25s;box-shadow:var(--shadow-lg)}
+    .toast.show{transform:translateX(-50%) translateY(0)}
+    .toast.success{border-color:var(--green);color:var(--green)}
+    .toast.error{border-color:var(--red);color:var(--red)}
+    .save-ind{position:fixed;top:12px;right:12px;background:var(--surface);border:1px solid var(--border);padding:6px 10px;border-radius:999px;font-size:11px;color:var(--muted);display:none;z-index:90}
+    .save-ind.show{display:block}
+    @media (max-width:760px){
+      .top-grid{grid-template-columns:1fr}
+      .stats{grid-template-columns:repeat(2,1fr)}
+      .grid-2,.report-summary,.oring-box{grid-template-columns:1fr}
+      .mini-bar,.sec-count{display:none}
+      .task-row{flex-wrap:wrap}
+      .toolbar{gap:6px}
+      button,.btn{font-size:13px}
+    }
+  </style>
 </head>
 <body>
-  <h1>GitHub Pages works</h1>
+  <div class="save-ind" id="saveInd">Saved</div>
+  <div class="wrap">
+    <div>
+      <div class="app-title">Pump Cartridge Installation Tracker</div>
+      <div class="app-sub">HP Booster Pump · Cartridge Change-out · 15 Sections</div>
+    </div>
+
+    <div class="top-grid">
+      <div class="card card-pad">
+        <div class="workdate-bar">
+          <div class="wd-badge">📅</div>
+          <div style="flex:1;min-width:180px">
+            <div class="wd-label">Logging changes for</div>
+            <div class="wd-value" id="wdDisplay">Today</div>
+          </div>
+          <div style="min-width:180px"><input type="date" id="wdInput" /></div>
+          <button onclick="setWorkDate(todayISO())">Today</button>
+        </div>
+      </div>
+
+      <div class="card overall">
+        <div class="overall-top"><span>Overall progress</span><span id="overallTxt">0%</span></div>
+        <div class="bar-track"><div class="bar-fill" id="overallBar"></div></div>
+      </div>
+    </div>
+
+    <div class="stats" style="margin-top:12px">
+      <div class="card stat"><div class="stat-label">Total tasks</div><div class="stat-val" id="stTotal">0</div></div>
+      <div class="card stat"><div class="stat-label">Completed</div><div class="stat-val g" id="stDone">0</div></div>
+      <div class="card stat"><div class="stat-label">In progress</div><div class="stat-val a" id="stProg">0</div></div>
+      <div class="card stat"><div class="stat-label">Sections</div><div class="stat-val" id="stSecs">0/15</div></div>
+    </div>
+
+    <div class="toolbar">
+      <button class="primary" onclick="openReport()">Daily Report</button>
+      <button onclick="exportData()">Export</button>
+      <button onclick="document.getElementById('importInput').click()">Import</button>
+      <button onclick="expandAll()">Expand All</button>
+      <button onclick="collapseAll()">Collapse All</button>
+      <button class="danger" onclick="resetAll()">Reset</button>
+      <input id="importInput" type="file" accept=".json" hidden />
+    </div>
+
+    <div class="sections" id="sections"></div>
+  </div>
+
+  <div class="modal-overlay" id="reportModal">
+    <div class="modal">
+      <div class="modal-head" style="display:flex;align-items:center;gap:10px">
+        <div class="modal-title" style="flex:1">Daily Report</div>
+        <button onclick="closeReport()">Close</button>
+      </div>
+      <div class="modal-body" id="reportBody"></div>
+      <div class="modal-foot">
+        <button class="primary" onclick="copyReport()">Copy Text</button>
+        <button onclick="downloadReport()">Download</button>
+        <button onclick="window.print()">Print</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const SECTIONS = [
+      { id:"s1", num:1, title:"Isolation", tasks:[
+        {id:"s1t1", title:"LOTO and Mechanical Isolation Completed"},
+        {id:"s1t2", title:"Suction Spool Drop"},
+        {id:"s1t3", title:"Discharge Spool Drop"},
+        {id:"s1t4", title:"Blinds Installation"},
+        {id:"s1t5", title:"Safe Isolation Confirmation"},
+      ]},
+      { id:"s2", num:2, title:"Removal Preparation", tasks:[
+        {id:"s2t1", title:"Suction Screen Inspection"},
+        {id:"s2t2", title:"Cartridge Withdrawal Tools at Site"},
+        {id:"s2t3", title:"IB Instrumentation Removal"},
+        {id:"s2t4", title:"OB Instrumentation Removal"},
+        {id:"s2t5", title:"IB Oil Pipes and Drain Sight Glass Removal"},
+        {id:"s2t6", title:"OB Oil Pipes Removal, Draining, and Blinding"},
+        {id:"s2t7", title:"Water Pipes Removal"},
+        {id:"s2t8", title:"OB Upper Bearing Housing Inspection and Boxing Up"},
+        {id:"s2t9", title:"Delivery Flange Nut Loosening by Hydraulic Method", flex:true},
+      ]},
+      { id:"s3", num:3, title:"Coupling and Guard Removal", tasks:[
+        {id:"s3t1", title:"Spacer Coupling Guard Removal"},
+        {id:"s3t2", title:"Spacer Coupling Split Plate Removal"},
+        {id:"s3t3", title:"Spacer Coupling Removal"},
+        {id:"s3t4", title:"Load Coupling Guard Bolt Loosening"},
+        {id:"s3t5", title:"Load Coupling Guard Removal by Crane"},
+        {id:"s3t6", title:"Load Coupling Guard Removal"},
+        {id:"s3t7", title:"Load Coupling Disconnection"},
+        {id:"s3t8", title:"Coupling Hub Removal by Hydraulic Method", flex:true},
+      ]},
+      { id:"s4", num:4, title:"Discharge Side and Withdrawal Setup", tasks:[
+        {id:"s4t1", title:"Tensioning Tools Setup"},
+        {id:"s4t2", title:"Delivery Flange Stud Cleaning and Polishing"},
+        {id:"s4t3", title:"Pull-Up Ring Bolts Removal"},
+        {id:"s4t4", title:"Withdrawal Table Rigging Up"},
+        {id:"s4t5", title:"Extension Piece Rigging Up"},
+        {id:"s4t6", title:"Extension Piece Installation"},
+        {id:"s4t7", title:"Extension Piece Pedestal Installation"},
+        {id:"s4t8", title:"Withdrawal Table Level Alignment"},
+        {id:"s4t9", title:"Discharge Head Guide Plate Installation"},
+        {id:"s4t10", title:"Pull-Up Ring Removal"},
+      ]},
+      { id:"s5", num:5, title:"Cartridge Withdrawal", tasks:[
+        {id:"s5t1", title:"Pump Cartridge Partial Withdrawal"},
+        {id:"s5t2", title:"Intermediate Piece Installation"},
+        {id:"s5t3", title:"Pump Cartridge Full Withdrawal"},
+        {id:"s5t4", title:"Old Cartridge Rigging Down"},
+        {id:"s5t5", title:"Extension Piece Removal"},
+        {id:"s5t6", title:"Cartridge Guide Removal"},
+        {id:"s5t7", title:"Old Cartridge Transfer to Constar"},
+      ]},
+      { id:"s6", num:6, title:"Inspection and Cleaning", tasks:[
+        {id:"s6t1", title:"Barrel Cleaning"},
+        {id:"s6t2", title:"Barrel Mating Face Cleaning"},
+        {id:"s6t3", title:"Pump Barrel Measurement Verification"},
+        {id:"s6t4", title:"Cyclone Separator Piping Cleaning and Flushing"},
+        {id:"s6t5", title:"Lube Oil, Seal Piping, and Drain Line Cleaning"},
+      ]},
+      { id:"s7", num:7, title:"New Cartridge Preparation", tasks:[
+        {id:"s7t1", title:"New Cartridge Rigging Up from Constar"},
+        {id:"s7t2", title:"Extension Piece Installation on New Cartridge"},
+        {id:"s7t3", title:"Cartridge Guide Installation on New Cartridge"},
+        {id:"s7t4", title:"New Cartridge Installation on Withdrawal Table"},
+        {id:"s7t5", title:"Discharge Flange Gasket Installation"},
+        {id:"s7t6", title:"Required O-Rings Installation"},
+        {id:"s7t7", title:"Withdrawal Table Balancing"},
+      ]},
+      { id:"s8", num:8, title:"Material Readiness / O-Ring Verification", defaultCollapsed:true, tasks:[
+        {id:"s8t1", title:"First Impeller O-Ring Verification", type:"oring", partNo:"412.06", material:"1000787129", qty:6},
+        {id:"s8t2", title:"Discharge Flange Seal Ring Verification", type:"oring", partNo:"411.09", material:"1000475361", qty:2},
+        {id:"s8t3", title:"Middle Impeller O-Ring Verification", type:"oring", partNo:"412.09", material:"1000787132", qty:3},
+        {id:"s8t4", title:"Pull-Up Ring Face O-Ring Verification", type:"oring", partNo:"412.05", material:"1000787128", qty:3},
+        {id:"s8t5", title:"Pull-Up Ring Vertical O-Ring Verification", type:"oring", partNo:"412.04", material:"1000780984", qty:3},
+      ]},
+      { id:"s9", num:9, title:"Cartridge Installation", tasks:[
+        {id:"s9t1", title:"Refurbished Cartridge Insertion Start"},
+        {id:"s9t2", title:"Refurbished Cartridge Full Insertion"},
+        {id:"s9t3", title:"Cartridge Securing"},
+        {id:"s9t4", title:"Cartridge Guide Plate Removal"},
+        {id:"s9t5", title:"Delivery Flange Nut Installation"},
+      ]},
+      { id:"s10", num:10, title:"Hydraulic Tightening", tasks:[
+        {id:"s10t1", title:"Delivery Flange Tightening by Hydraulic Method", flex:true,
+          milestones:[
+            {id:"s10t1m1", label:"First Stage Completed"},
+            {id:"s10t1m2", label:"Third Stage Completed"},
+          ]
+        },
+      ]},
+      { id:"s11", num:11, title:"Post-Installation Mechanical and Alignment Checks", tasks:[
+        {id:"s11t1", title:"Free Rotation Check"},
+        {id:"s11t2", title:"Soft Foot Check"},
+        {id:"s11t3", title:"Soft Foot Correction"},
+        {id:"s11t4", title:"Pump and Gearbox Alignment Check", flex:true},
+        {id:"s11t5", title:"Alignment Correction", flex:true},
+        {id:"s11t6", title:"Shaft End Float Measurement"},
+        {id:"s11t7", title:"Shaft Centralization with PCST Crew"},
+        {id:"s11t8", title:"Pump Shaft Spider and Rig Alignment Installation"},
+        {id:"s11t9", title:"Gearbox Shaft Spider and Rig Alignment Installation"},
+        {id:"s11t10", title:"Axial Movement Measurement"},
+        {id:"s11t11", title:"Alignment Reading"},
+        {id:"s11t12", title:"Alignment Prechecks"},
+      ]},
+      { id:"s12", num:12, title:"Temporary Setup Removal and Reinstatement", tasks:[
+        {id:"s12t1", title:"Pull-Up Ring O-Rings Installation"},
+        {id:"s12t2", title:"Pull-Up Ring Installation"},
+        {id:"s12t3", title:"Extension Piece and Pedestal Removal"},
+        {id:"s12t4", title:"Withdrawal Table Rigging Down"},
+        {id:"s12t5", title:"Extension Piece and Pedestal Rigging Down"},
+        {id:"s12t6", title:"IB Instrumentation Installation by PCST Crew"},
+      ]},
+      { id:"s13", num:13, title:"Coupling, Gearbox, and Oil System Final Reassembly", tasks:[
+        {id:"s13t1", title:"Coupling Hub Installation by Hydraulic Method", flex:true},
+        {id:"s13t2", title:"Load Coupling Gap Calculation"},
+        {id:"s13t3", title:"Load Coupling Installation with Guard"},
+        {id:"s13t4", title:"Spacer Coupling Gap Calculation"},
+        {id:"s13t5", title:"Spacer Coupling Installation with Guard"},
+        {id:"s13t6", title:"Oil Supply Mesh Installation"},
+        {id:"s13t7", title:"Gearbox Breather Replacement"},
+        {id:"s13t8", title:"Gearbox Cleaning"},
+        {id:"s13t9", title:"Lube Oil Line Installation with Mesh"},
+        {id:"s13t10", title:"Lube Oil Filter Replacement"},
+        {id:"s13t11", title:"Lube Oil Flushing / Debris Monitoring", flex:true},
+        {id:"s13t12", title:"Oil Sampling and Lab Analysis"},
+      ]},
+      { id:"s14", num:14, title:"Spool Reinstatement and De-Blinding", tasks:[
+        {id:"s14t1", title:"Discharge Upstream Endblind Drop"},
+        {id:"s14t2", title:"Discharge Downstream Endblind Drop"},
+        {id:"s14t3", title:"Discharge Spool Installation"},
+        {id:"s14t4", title:"Discharge Spool Tightening"},
+        {id:"s14t5", title:"Discharge Flange Tightening Completion"},
+        {id:"s14t6", title:"Suction Upstream Endblind Drop"},
+        {id:"s14t7", title:"Suction Downstream Endblind Drop"},
+        {id:"s14t8", title:"Suction Spool Installation"},
+        {id:"s14t9", title:"Suction Spool Tightening"},
+      ]},
+      { id:"s15", num:15, title:"Startup and Handover", tasks:[
+        {id:"s15t1", title:"Startup with RU and Vibration Crew"},
+        {id:"s15t2", title:"Pump Handed Over to Operation for Startup"},
+      ]},
+    ];
+
+    const KEY = "pump-tracker-v6";
+    const ALL_TASKS = SECTIONS.flatMap(s => s.tasks);
+    const TASK_MAP = Object.fromEntries(ALL_TASKS.map(t => [t.id, t]));
+    const SEC_OF = {};
+    SECTIONS.forEach(s => s.tasks.forEach(t => SEC_OF[t.id] = s.id));
+    let S = {};
+    let currentReportDate = null;
+    let saveTimer = null;
+
+    function todayISO(){
+      const d = new Date();
+      return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+    }
+    function uid(){ return Math.random().toString(36).slice(2,9); }
+    function esc(s){
+      return String(s ?? "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/\"/g,"&quot;").replace(/'/g,"&#39;");
+    }
+    function fmtDate(iso){
+      if(!iso) return "—";
+      const [y,m,d] = iso.split("-");
+      const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+      return `${parseInt(d)} ${months[parseInt(m,10)-1]} ${y}`;
+    }
+
+    function initState(){
+      try { S = JSON.parse(localStorage.getItem(KEY)) || {}; } catch { S = {}; }
+      if(!S._meta) S._meta = { workDate: todayISO(), lastBackup: null };
+      if(!S._meta.workDate) S._meta.workDate = todayISO();
+      if(!S.activityLog) S.activityLog = [];
+      SECTIONS.forEach(sec => {
+        if(!S[sec.id]) S[sec.id] = { collapsed: !!sec.defaultCollapsed, customTitle: null };
+        if(typeof S[sec.id].collapsed !== "boolean") S[sec.id].collapsed = !!sec.defaultCollapsed;
+      });
+      ALL_TASKS.forEach(t => {
+        if(!S[t.id]){
+          S[t.id] = {
+            progress:0, notes:"", startDate:"", endDate:"", updates:[], verified:false,
+            detailOpen:false, customTitle:null, lastModified:null
+          };
+        }
+        if(!Array.isArray(S[t.id].updates)) S[t.id].updates = [];
+        if(t.milestones){
+          t.milestones.forEach(m => {
+            if(typeof S[t.id][m.id] !== "boolean") S[t.id][m.id] = false;
+          });
+        }
+      });
+    }
+
+    function persist(){
+      try{
+        localStorage.setItem(KEY, JSON.stringify(S));
+        showSave();
+      } catch {
+        showToast("Save failed", "error");
+      }
+    }
+
+    function showSave(){
+      const el = document.getElementById("saveInd");
+      el.classList.add("show");
+      clearTimeout(saveTimer);
+      saveTimer = setTimeout(()=>el.classList.remove("show"), 1300);
+    }
+
+    function showToast(msg, type=""){
+      const t = document.createElement("div");
+      t.className = "toast " + type;
+      t.textContent = msg;
+      document.body.appendChild(t);
+      requestAnimationFrame(()=>t.classList.add("show"));
+      setTimeout(()=>{
+        t.classList.remove("show");
+        setTimeout(()=>t.remove(), 260);
+      }, 2200);
+    }
+
+    function getSecTitle(sec){ return S[sec.id].customTitle || sec.title; }
+    function getTaskTitle(t){ return S[t.id].customTitle || t.title; }
+    function taskProgress(t){ return t.type === "oring" ? (S[t.id].verified ? 100 : 0) : Number(S[t.id].progress || 0); }
+
+    function logActivity(taskId, type, extras = {}){
+      S.activityLog.push({
+        id: uid(),
+        date: S._meta.workDate,
+        ts: Date.now(),
+        taskId, type, ...extras
+      });
+      if(taskId && S[taskId]) S[taskId].lastModified = S._meta.workDate;
+    }
+
+    function secPct(sec){
+      return sec.tasks.length ? Math.round(sec.tasks.reduce((sum,t)=>sum + taskProgress(t),0) / sec.tasks.length) : 0;
+    }
+    function secDone(sec){
+      return sec.tasks.filter(t => taskProgress(t) === 100).length;
+    }
+
+    function updateWorkDateDisplay(){
+      const wd = S._meta.workDate;
+      document.getElementById("wdInput").value = wd;
+      document.getElementById("wdDisplay").textContent = wd === todayISO() ? `Today · ${fmtDate(wd)}` : fmtDate(wd);
+    }
+    function setWorkDate(iso){
+      if(!iso) return;
+      S._meta.workDate = iso;
+      persist();
+      updateWorkDateDisplay();
+      showToast(iso === todayISO() ? "Logging for today" : `Logging for ${fmtDate(iso)}`);
+    }
+
+    function updateDash(){
+      let total = 0, done = 0, inProg = 0, secsDone = 0;
+      SECTIONS.forEach(sec => {
+        let secDoneCount = 0;
+        sec.tasks.forEach(t => {
+          total++;
+          const p = taskProgress(t);
+          if(p === 100){ done++; secDoneCount++; }
+          else if(p > 0){ inProg++; }
+        });
+        if(secDoneCount === sec.tasks.length && sec.tasks.length){ secsDone++; }
+      });
+      const overall = total ? Math.round(ALL_TASKS.reduce((s,t)=>s+taskProgress(t),0) / total) : 0;
+      document.getElementById("stTotal").textContent = total;
+      document.getElementById("stDone").textContent = done;
+      document.getElementById("stProg").textContent = inProg;
+      document.getElementById("stSecs").textContent = `${secsDone}/${SECTIONS.length}`;
+      document.getElementById("overallTxt").textContent = overall + "%";
+      document.getElementById("overallBar").style.width = overall + "%";
+    }
+
+    function taskHtml(t){
+      const st = S[t.id];
+      const p = taskProgress(t);
+      const isOring = t.type === "oring";
+      const taskClass = p === 100 ? "task done" : p > 0 ? "task prog" : "task";
+      const dotClass = p === 100 ? "dot done" : p > 0 ? "dot prog" : "dot";
+
+      let extras = "";
+      if(t.flex) extras += `<span class="pill pill-flex">flex</span>`;
+      if(isOring) extras += `<span class="pill pill-oring">o-ring</span>`;
+
+      let actions = "";
+      if(isOring){
+        actions = `<button class="verify-btn ${st.verified ? 'verified' : ''}" onclick="toggleVerify('${t.id}')">${st.verified ? "✓ Verified" : "Verify"}</button>`;
+      }else{
+        actions = `
+          <div class="quick">
+            <button class="qbtn" onclick="qprog('${t.id}',0)">0</button>
+            <button class="qbtn" onclick="qprog('${t.id}',50)">50</button>
+            <button class="qbtn ${p===100 ? 'active' : ''}" onclick="qprog('${t.id}',100)">✓</button>
+          </div>
+          <button class="expand-btn" onclick="toggleDetail('${t.id}')">${st.detailOpen ? "Hide" : "More"}</button>
+        `;
+      }
+
+      let detailHtml = "";
+      if(isOring){
+        detailHtml = `
+          <div class="oring-box">
+            <div class="or-item"><div class="or-k">Part No</div><div class="or-v">${esc(t.partNo)}</div></div>
+            <div class="or-item"><div class="or-k">Material</div><div class="or-v">${esc(t.material)}</div></div>
+            <div class="or-item"><div class="or-k">Qty</div><div class="or-v">${esc(t.qty)}</div></div>
+          </div>
+        `;
+      }else{
+        const updates = st.updates.map((u, i) => `
+          <div class="upd">
+            <div class="upd-b"></div>
+            <div class="upd-text">
+              <div>${esc(u.text)}</div>
+              <div class="upd-date">${fmtDate(u.date)}</div>
+            </div>
+            <button class="upd-del" onclick="deleteUpdate('${t.id}', ${i})">×</button>
+          </div>
+        `).join("");
+
+        const milestones = t.milestones ? `
+          <div class="field">
+            <div class="field-label">Milestones</div>
+            <div style="display:flex;flex-direction:column;gap:6px">
+              ${t.milestones.map(m => `
+                <label style="display:flex;gap:8px;align-items:center;background:var(--bg2);border:1px solid var(--border);padding:8px 10px;border-radius:10px">
+                  <input type="checkbox" ${S[t.id][m.id] ? "checked" : ""} onchange="toggleMilestone('${t.id}','${m.id}')">
+                  <span>${esc(m.label)}</span>
+                </label>
+              `).join("")}
+            </div>
+          </div>
+        ` : "";
+
+        const flexDates = t.flex ? `
+          <div class="grid-2">
+            <div class="field">
+              <div class="field-label">Start date</div>
+              <input type="date" value="${esc(st.startDate || "")}" onchange="setField('${t.id}','startDate',this.value)">
+            </div>
+            <div class="field">
+              <div class="field-label">End date</div>
+              <input type="date" value="${esc(st.endDate || "")}" onchange="setField('${t.id}','endDate',this.value)">
+            </div>
+          </div>
+        ` : "";
+
+        detailHtml = `
+          <div class="task-detail ${st.detailOpen ? 'open' : ''}" id="det-${t.id}">
+            <div class="field">
+              <div class="field-label">Progress</div>
+              <div class="prog-wrap">
+                <input type="range" min="0" max="100" value="${p}" oninput="setProgress('${t.id}', this.value)" style="flex:1">
+                <input type="number" min="0" max="100" value="${p}" oninput="setProgress('${t.id}', this.value)" style="width:82px">
+              </div>
+            </div>
+            ${flexDates}
+            ${milestones}
+            <div class="field" style="margin-top:10px">
+              <div class="field-label">Notes / Findings</div>
+              <textarea oninput="setField('${t.id}','notes',this.value)">${esc(st.notes || "")}</textarea>
+            </div>
+            <div class="field" style="margin-top:10px">
+              <div class="field-label">Add update / reading</div>
+              <div class="grid-2">
+                <input type="text" id="updText-${t.id}" placeholder="Add update, reading, or finding" onkeydown="if(event.key==='Enter') addUpdate('${t.id}')">
+                <input type="date" id="updDate-${t.id}" value="${S._meta.workDate}">
+              </div>
+              <div style="margin-top:8px"><button class="primary" onclick="addUpdate('${t.id}')">Add Update</button></div>
+            </div>
+            <div class="updates">${updates}</div>
+            ${st.lastModified ? `<div class="task-sub" style="margin-top:10px">Last updated: ${fmtDate(st.lastModified)}</div>` : ""}
+          </div>
+        `;
+      }
+
+      return `
+        <div class="${taskClass}" id="task-${t.id}">
+          <div class="task-row">
+            <div class="${dotClass}"></div>
+            <div class="task-main">
+              <div class="task-title ${p===100 ? 'done' : ''}">${esc(getTaskTitle(t))}</div>
+              <div class="task-sub">${p}% complete</div>
+            </div>
+            ${extras}
+            ${actions}
+          </div>
+          ${detailHtml}
+        </div>
+      `;
+    }
+
+    function secHtml(sec){
+      const pct = secPct(sec);
+      const done = secDone(sec);
+      const secClass = pct === 100 ? "sec card complete" : "sec card";
+      const pctClass = pct === 100 ? "sec-pct done" : pct > 0 ? "sec-pct active" : "sec-pct";
+      return `
+        <div class="${secClass}">
+          <div class="sec-head" onclick="toggleSection('${sec.id}')">
+            <div class="sec-num">${String(sec.num).padStart(2, "0")}</div>
+            <div class="sec-title">${esc(getSecTitle(sec))}</div>
+            <div class="sec-meta">
+              <div class="${pctClass}">${pct}%</div>
+              <div class="mini-bar"><div class="mini-fill" style="width:${pct}%"></div></div>
+              <div class="sec-count">${done}/${sec.tasks.length}</div>
+              <div class="chev ${S[sec.id].collapsed ? '' : 'open'}">⌄</div>
+            </div>
+          </div>
+          <div class="sec-body ${S[sec.id].collapsed ? '' : 'open'}">
+            <div class="sec-body-inner">${sec.tasks.map(taskHtml).join("")}</div>
+          </div>
+        </div>
+      `;
+    }
+
+    function render(){
+      document.getElementById("sections").innerHTML = SECTIONS.map(secHtml).join("");
+      updateDash();
+      updateWorkDateDisplay();
+    }
+
+    function toggleSection(secId){
+      S[secId].collapsed = !S[secId].collapsed;
+      persist();
+      render();
+    }
+    function expandAll(){ SECTIONS.forEach(s => S[s.id].collapsed = false); persist(); render(); }
+    function collapseAll(){ SECTIONS.forEach(s => S[s.id].collapsed = true); persist(); render(); }
+
+    function qprog(taskId, value){
+      setProgress(taskId, value);
+    }
+    function setProgress(taskId, value){
+      value = Math.max(0, Math.min(100, Number(value) || 0));
+      const old = Number(S[taskId].progress || 0);
+      S[taskId].progress = value;
+      if(old !== value) logActivity(taskId, "progress", { from: old, to: value });
+      persist();
+      render();
+    }
+    function toggleDetail(taskId){
+      S[taskId].detailOpen = !S[taskId].detailOpen;
+      persist();
+      render();
+    }
+    function setField(taskId, field, value){
+      const old = S[taskId][field];
+      S[taskId][field] = value;
+      if(old !== value){
+        logActivity(taskId, field === "notes" ? "note" : "field", { field, to: value });
+      }
+      persist();
+    }
+    function toggleVerify(taskId){
+      S[taskId].verified = !S[taskId].verified;
+      logActivity(taskId, "verify", { to: S[taskId].verified });
+      persist();
+      render();
+    }
+    function toggleMilestone(taskId, milestoneId){
+      S[taskId][milestoneId] = !S[taskId][milestoneId];
+      const label = TASK_MAP[taskId].milestones.find(m => m.id === milestoneId)?.label || milestoneId;
+      logActivity(taskId, "milestone", { milestoneId, label, to: S[taskId][milestoneId] });
+      persist();
+      render();
+    }
+    function addUpdate(taskId){
+      const textEl = document.getElementById(`updText-${taskId}`);
+      const dateEl = document.getElementById(`updDate-${taskId}`);
+      const text = textEl?.value.trim();
+      const date = dateEl?.value || S._meta.workDate;
+      if(!text) return;
+      S[taskId].updates.push({ id: uid(), text, date });
+      logActivity(taskId, "update", { text, updDate: date });
+      persist();
+      render();
+    }
+    function deleteUpdate(taskId, index){
+      S[taskId].updates.splice(index, 1);
+      persist();
+      render();
+    }
+    function resetAll(){
+      if(!confirm("Reset all progress and clear activity log?")) return;
+      ALL_TASKS.forEach(t => {
+        S[t.id].progress = 0;
+        S[t.id].notes = "";
+        S[t.id].startDate = "";
+        S[t.id].endDate = "";
+        S[t.id].updates = [];
+        S[t.id].verified = false;
+        S[t.id].detailOpen = false;
+        S[t.id].lastModified = null;
+        if(t.milestones) t.milestones.forEach(m => S[t.id][m.id] = false);
+      });
+      S.activityLog = [];
+      persist();
+      render();
+      showToast("All progress reset", "success");
+    }
+
+    function exportData(){
+      try{
+        const payload = { version: 6, exportedAt: new Date().toISOString(), state: S };
+        const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `pump-tracker-backup-${todayISO()}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+        S._meta.lastBackup = new Date().toISOString();
+        persist();
+        showToast("Backup exported", "success");
+      } catch {
+        showToast("Export failed", "error");
+      }
+    }
+    function importData(input){
+      const f = input.files?.[0];
+      if(!f) return;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try{
+          const parsed = JSON.parse(e.target.result);
+          if(!parsed.state) throw new Error("Invalid backup file");
+          if(!confirm("Replace current data with imported backup?")) return;
+          S = parsed.state;
+          initState();
+          persist();
+          render();
+          showToast("Backup restored", "success");
+        } catch(err){
+          showToast("Import failed: " + err.message, "error");
+        } finally {
+          input.value = "";
+        }
+      };
+      reader.readAsText(f);
+    }
+
+    function openReport(){
+      currentReportDate = S._meta.workDate;
+      renderReport();
+      document.getElementById("reportModal").classList.add("show");
+      document.body.style.overflow = "hidden";
+    }
+    function closeReport(){
+      document.getElementById("reportModal").classList.remove("show");
+      document.body.style.overflow = "";
+    }
+
+    function renderReport(){
+      const date = currentReportDate;
+      const acts = S.activityLog.filter(a => a.date === date);
+      const byTask = {};
+      acts.forEach(a => {
+        if(!a.taskId) return;
+        if(!byTask[a.taskId]) byTask[a.taskId] = [];
+        byTask[a.taskId].push(a);
+      });
+
+      const tasksChanged = Object.keys(byTask).length;
+      const tasksDoneToday = Object.entries(byTask).filter(([tid, arr]) => arr.some(a => a.type === "progress" && Number(a.to) === 100)).length;
+      const updatesCount = acts.filter(a => a.type === "update").length;
+      const overall = ALL_TASKS.length ? Math.round(ALL_TASKS.reduce((sum,t)=>sum+taskProgress(t),0) / ALL_TASKS.length) : 0;
+
+      let html = `
+        <div class="field" style="margin-bottom:12px">
+          <div class="field-label">Report for</div>
+          <input type="date" value="${date}" onchange="currentReportDate=this.value;renderReport()">
+        </div>
+        <div class="report-summary">
+          <div class="rstat"><div class="rval">${tasksChanged}</div><div class="rlabel">Tasks Active</div></div>
+          <div class="rstat"><div class="rval g">${tasksDoneToday}</div><div class="rlabel">Completed</div></div>
+          <div class="rstat"><div class="rval a">${updatesCount}</div><div class="rlabel">Updates</div></div>
+          <div class="rstat"><div class="rval">${overall}%</div><div class="rlabel">Overall</div></div>
+        </div>
+      `;
+
+      if(tasksChanged === 0){
+        html += `<div style="text-align:center;color:var(--muted);padding:28px 10px">No activity recorded for ${fmtDate(date)}.</div>`;
+        document.getElementById("reportBody").innerHTML = html;
+        return;
+      }
+
+      const bySec = {};
+      Object.keys(byTask).forEach(taskId => {
+        const secId = SEC_OF[taskId];
+        if(!bySec[secId]) bySec[secId] = [];
+        bySec[secId].push(taskId);
+      });
+
+      SECTIONS.forEach(sec => {
+        const taskIds = bySec[sec.id];
+        if(!taskIds) return;
+        html += `<div class="rsec"><div class="rsec-title">${String(sec.num).padStart(2,"0")} · ${esc(getSecTitle(sec))}</div>`;
+        taskIds.forEach(taskId => {
+          const t = TASK_MAP[taskId];
+          const arr = byTask[taskId].sort((a,b) => a.ts - b.ts);
+          const current = taskProgress(t);
+          html += `<div class="r-task"><div class="r-head"><span>${current === 100 ? "✓" : "◐"}</span><span>${esc(getTaskTitle(t))}</span><span class="r-pct">${current}%</span></div><ul class="r-list">`;
+          const progActs = arr.filter(a => a.type === "progress");
+          if(progActs.length){
+            const first = progActs[0].from;
+            const last = progActs[progActs.length - 1].to;
+            if(first !== last) html += `<li>Progress: ${first}% → ${last}%</li>`;
+          }
+          arr.forEach(a => {
+            if(a.type === "update") html += `<li>Update: ${esc(a.text)}</li>`;
+            if(a.type === "verify" && a.to) html += `<li>Material verified</li>`;
+            if(a.type === "milestone") html += `<li>${a.to ? "✓" : "✗"} ${esc(a.label)}</li>`;
+            if(a.type === "field" && a.field === "startDate") html += `<li>Start date set: ${fmtDate(a.to)}</li>`;
+            if(a.type === "field" && a.field === "endDate") html += `<li>End date set: ${fmtDate(a.to)}</li>`;
+          });
+          html += `</ul></div>`;
+        });
+        html += `</div>`;
+      });
+
+      document.getElementById("reportBody").innerHTML = html;
+    }
+
+    function buildReportText(){
+      const date = currentReportDate;
+      const acts = S.activityLog.filter(a => a.date === date);
+      const byTask = {};
+      acts.forEach(a => { if(a.taskId) (byTask[a.taskId] = byTask[a.taskId] || []).push(a); });
+
+      const overall = ALL_TASKS.length ? Math.round(ALL_TASKS.reduce((sum,t)=>sum+taskProgress(t),0) / ALL_TASKS.length) : 0;
+      const tasksChanged = Object.keys(byTask).length;
+      const tasksDoneToday = Object.values(byTask).filter(arr => arr.some(a => a.type === "progress" && Number(a.to) === 100)).length;
+      const updatesCount = acts.filter(a => a.type === "update").length;
+
+      let out = "";
+      out += "Pump Cartridge Installation — Daily Report\n";
+      out += `Date: ${fmtDate(date)}\n\n`;
+      out += `Overall Progress: ${overall}%\n`;
+      out += `Tasks Active: ${tasksChanged}\n`;
+      out += `Completed Today: ${tasksDoneToday}\n`;
+      out += `Updates Logged: ${updatesCount}\n\n`;
+
+      if(!tasksChanged){
+        out += "No activity recorded for this date.\n";
+        return out;
+      }
+
+      const bySec = {};
+      Object.keys(byTask).forEach(taskId => {
+        const secId = SEC_OF[taskId];
+        (bySec[secId] = bySec[secId] || []).push(taskId);
+      });
+
+      SECTIONS.forEach(sec => {
+        const taskIds = bySec[sec.id];
+        if(!taskIds) return;
+        out += `${String(sec.num).padStart(2,"0")} ${getSecTitle(sec)}\n`;
+        taskIds.forEach(taskId => {
+          const t = TASK_MAP[taskId];
+          const arr = byTask[taskId].sort((a,b) => a.ts - b.ts);
+          const current = taskProgress(t);
+          out += `  - ${getTaskTitle(t)} — ${current}%\n`;
+          const progActs = arr.filter(a => a.type === "progress");
+          if(progActs.length){
+            const first = progActs[0].from;
+            const last = progActs[progActs.length - 1].to;
+            if(first !== last) out += `    Progress: ${first}% -> ${last}%\n`;
+          }
+          arr.forEach(a => {
+            if(a.type === "update") out += `    Update: ${a.text}\n`;
+            if(a.type === "verify" && a.to) out += `    Material verified\n`;
+            if(a.type === "milestone") out += `    ${a.to ? "Done" : "Undone"} milestone: ${a.label}\n`;
+          });
+        });
+        out += "\n";
+      });
+
+      out += `Generated: ${new Date().toLocaleString("en-GB")}\n`;
+      return out;
+    }
+
+    async function copyReport(){
+      const txt = buildReportText();
+      try{
+        await navigator.clipboard.writeText(txt);
+        showToast("Report copied", "success");
+      } catch {
+        const ta = document.createElement("textarea");
+        ta.value = txt;
+        ta.style.position = "fixed";
+        ta.style.left = "-9999px";
+        document.body.appendChild(ta);
+        ta.select();
+        try{ document.execCommand("copy"); showToast("Report copied", "success"); }
+        catch{ showToast("Copy failed", "error"); }
+        ta.remove();
+      }
+    }
+
+    function downloadReport(){
+      const txt = buildReportText();
+      const blob = new Blob([txt], { type: "text/plain;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `pump-report-${currentReportDate}.txt`;
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast("Report downloaded", "success");
+    }
+
+    document.getElementById("wdInput").addEventListener("change", e => setWorkDate(e.target.value));
+    document.getElementById("importInput").addEventListener("change", e => importData(e.target));
+
+    document.getElementById("reportModal").addEventListener("click", e => {
+      if(e.target.id === "reportModal") closeReport();
+    });
+
+    window.addEventListener("beforeunload", () => { try{ persist(); }catch{} });
+    document.addEventListener("keydown", e => {
+      if(e.key === "Escape" && document.getElementById("reportModal").classList.contains("show")) closeReport();
+    });
+
+    initState();
+    render();
+  </script>
 </body>
 </html>
