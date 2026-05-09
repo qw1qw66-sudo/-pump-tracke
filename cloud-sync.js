@@ -6,6 +6,9 @@ Setup:
 3) Add before </body> in index.html:
    <script src="supabase-config.js"></script>
    <script type="module" src="cloud-sync.js"></script>
+
+This module can also run on index-cloud.html and sync data changed by an iframe because
+localStorage is shared by origin.
 */
 
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
@@ -22,13 +25,15 @@ let currentUser = null;
 let applyingRemote = false;
 let saveTimer = null;
 let nativeSetItem = localStorage.setItem.bind(localStorage);
+let lastLocalSnapshot = localStorage.getItem(LOCAL_KEY) || '';
+let pollTimer = null;
 
 function addStyles(){
   const style=document.createElement('style');
   style.textContent=`
-  #${STATUS_ID}{position:fixed;left:12px;bottom:12px;z-index:9999;border:1px solid #314665;background:#152033;color:#c4d0e2;border-radius:999px;padding:8px 12px;font:12px system-ui;box-shadow:0 10px 30px rgba(0,0,0,.35);cursor:pointer}
+  #${STATUS_ID}{position:fixed;left:12px;bottom:12px;z-index:999999;border:1px solid #314665;background:#152033;color:#c4d0e2;border-radius:999px;padding:8px 12px;font:12px system-ui;box-shadow:0 10px 30px rgba(0,0,0,.35);cursor:pointer}
   #${STATUS_ID}.ok{border-color:#34d399;color:#34d399}#${STATUS_ID}.warn{border-color:#fbbf24;color:#fbbf24}#${STATUS_ID}.bad{border-color:#f87171;color:#f87171}
-  #${PANEL_ID}{position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,.65);display:none;align-items:center;justify-content:center;padding:16px}
+  #${PANEL_ID}{position:fixed;inset:0;z-index:1000000;background:rgba(0,0,0,.65);display:none;align-items:center;justify-content:center;padding:16px}
   #${PANEL_ID}.show{display:flex}#${PANEL_ID} .box{width:min(460px,100%);background:#152033;border:1px solid #314665;border-radius:16px;padding:16px;color:#e4ecf7;font:14px system-ui;box-shadow:0 20px 60px rgba(0,0,0,.5)}
   #${PANEL_ID} h3{margin:0 0 8px;font-size:18px}#${PANEL_ID} p{margin:6px 0;color:#c4d0e2;line-height:1.5}#${PANEL_ID} input{width:100%;padding:10px;border-radius:10px;border:1px solid #314665;background:#101a2a;color:#e4ecf7;margin:8px 0;font:inherit}#${PANEL_ID} button{border:1px solid #314665;background:#101a2a;color:#e4ecf7;border-radius:10px;padding:9px 12px;font-weight:700;margin:4px;cursor:pointer}#${PANEL_ID} button.primary{border-color:#38bdf8;color:#38bdf8;background:rgba(56,189,248,.12)}#${PANEL_ID} button.danger{border-color:#f87171;color:#f87171}#${PANEL_ID} .row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}#${PANEL_ID} .small{font-size:12px;color:#7a8ca5}`;
   document.head.appendChild(style);
@@ -40,7 +45,7 @@ function setStatus(text,type='warn'){
   el.textContent=text;el.className=type;
 }
 function readLocal(){try{return JSON.parse(localStorage.getItem(LOCAL_KEY)||'{}')}catch{return {}}}
-function writeLocal(data){applyingRemote=true;nativeSetItem(LOCAL_KEY,JSON.stringify(data||{}));applyingRemote=false}
+function writeLocal(data){applyingRemote=true;nativeSetItem(LOCAL_KEY,JSON.stringify(data||{}));lastLocalSnapshot=localStorage.getItem(LOCAL_KEY)||'';applyingRemote=false}
 function stamp(data){const next=data||{};next._cloud={...(next._cloud||{}),updated_at:new Date().toISOString()};return next}
 function clean(data){const c=JSON.parse(JSON.stringify(data||{}));if(c._cloud)delete c._cloud;return c}
 function localDate(data){return data?._cloud?.updated_at||null}
@@ -68,11 +73,20 @@ async function firstSync(){
   try{const remote=await getRemote();if(!remote){await pushLocal();return}if(isNewer(remote.updated_at,localDate(readLocal())))await pullRemote();else await pushLocal();}
   catch(e){console.error(e);setStatus('Cloud: sync error','bad')}
 }
+function queuePush(){
+  if(!currentUser||applyingRemote)return;
+  clearTimeout(saveTimer);
+  saveTimer=setTimeout(()=>pushLocal().catch(e=>{console.error(e);setStatus('Cloud: save failed','bad')}),1200);
+}
 function patchLocalStorage(){
-  if(localStorage.__pumpTrackerCloudPatched)return;
-  const old=nativeSetItem;
-  localStorage.setItem=function(key,value){old(key,value);if(key===LOCAL_KEY&&!applyingRemote){clearTimeout(saveTimer);saveTimer=setTimeout(()=>pushLocal().catch(e=>{console.error(e);setStatus('Cloud: save failed','bad')}),1200)}};
-  localStorage.__pumpTrackerCloudPatched=true;
+  if(!localStorage.__pumpTrackerCloudPatched){
+    const old=nativeSetItem;
+    localStorage.setItem=function(key,value){old(key,value);if(key===LOCAL_KEY&&!applyingRemote){lastLocalSnapshot=String(value||'');queuePush();}};
+    localStorage.__pumpTrackerCloudPatched=true;
+  }
+  window.addEventListener('storage',e=>{if(e.key===LOCAL_KEY&&!applyingRemote){lastLocalSnapshot=e.newValue||'';queuePush();}});
+  clearInterval(pollTimer);
+  pollTimer=setInterval(()=>{const now=localStorage.getItem(LOCAL_KEY)||'';if(now!==lastLocalSnapshot&&!applyingRemote){lastLocalSnapshot=now;queuePush();}},2000);
 }
 async function realtime(){
   supabase.channel('pump-tracker-state-'+currentUser.id).on('postgres_changes',{event:'*',schema:'public',table:TABLE,filter:`user_id=eq.${currentUser.id}`},()=>pullRemote().catch(console.error)).subscribe();
